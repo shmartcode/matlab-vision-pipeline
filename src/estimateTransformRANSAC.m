@@ -1,0 +1,60 @@
+function final_A = estimateTransformRANSAC( im1_points, im2_points )
+% N x 2
+
+Nransac = 10000;    % play around with this number
+thresh = 1.5;         % threshold for how close we want to try and get distances. play around with this number
+
+k = 4;
+
+N = size( im1_points,1 );
+
+num_best = 0;
+num_good = 0;
+idxbest = [];
+Abest = [];
+count = 0;
+for i = 1 : Nransac
+
+    % select a set of k = 4 random correspondences
+    idx = randperm( N, k ); % randperm makes random ordering of values 1 to N and return first k values
+    pts1k = im1_points(idx,:);
+    pts2k = im2_points(idx,:);
+
+    A = estimateTransform( pts2k, pts1k );
+
+    if i == 1
+        A
+    end
+
+    im2_points_estim = A * [im2_points'; ones( 1,N )];  % have to transpose for the matrix mult with A. must fill with ones?
+    im2_points_estim = im2_points_estim ./ im2_points_estim(3,:);
+    im2_points_estim = [im2_points_estim(1,:);im2_points_estim(2,:)]; % trimming the last row that we added to make matrix mult viable.
+    im2_points_estim = im2_points_estim';       % transpose back
+
+    distances = sqrt( sum( (im2_points_estim-im1_points).^2,2 ) );
+
+    idxgood = distances < thresh;
+
+    num_good = sum(idxgood);
+
+    if num_good > num_best
+        count = count + 1;
+        idxbest = find(idxgood); % need to use find function to get actual 1's and 0's instead of logicals
+        Abest = A;
+        num_best = num_good;
+    end
+
+end
+
+% Abest is biased toward the best set of k. But we want it to be
+% evenly influenced by all of the points in idxbest
+if isempty(idxbest)
+    error('idxbest was empty. ransac failed');
+else
+    % display('idx best was not empty');
+    % disp(count);
+end
+
+final_A = estimateTransform( im2_points(idxbest,:), im1_points(idxbest,:))
+
+end

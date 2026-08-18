@@ -1,0 +1,111 @@
+function TransformedImage = transformImage(InputImage, TransformMatrix, TransformType)
+% Takes an image and performs a transformation
+% Applies the specified transformation to the input image based the given
+% matrix and the transform type.
+arguments (Input)
+    InputImage
+    TransformMatrix
+    TransformType
+end
+arguments (Output)
+    TransformedImage
+end
+I = InputImage;
+A = TransformMatrix;
+
+switch TransformType
+    case 'scaling'
+        % for a scaling matrix we simply use 1/sx and 1/sy to get the
+        % inverse matrix
+        sx = A(1,1);
+        sy = A(2,2);
+        inverseMatrix = A;
+        inverseMatrix(1,1) = 1/sx;
+        inverseMatrix(2,2) = 1/sy;
+       
+    case 'rotation'
+        % for a rotation matrix we transpose to get the inverset matrix.
+        inverseMatrix = A';
+    case 'translation'
+        % for a translation matrix we simply negate the two values in element (1,3) and
+        % (2,3) to get the inverse matrix.
+        tx = A(1,3);
+        ty = A(2,3);
+        inverseMatrix = A;
+        inverseMatrix(1,3) = -tx;
+        inverseMatrix(2,3) = -ty;
+    case 'reflection'
+        % for a reflection matrix, the matrix itself is already the
+        % inverse.
+        inverseMatrix = A;
+    case 'shear'
+        % for a shear matrix the determinant is always one. so the inverse
+        % matrix is just the shear element negated. we do not need to worry
+        % about x versus y shear because one will always be some value rx
+        % and the other is 0. so we can simply negate both
+        rx = A(1,2);
+        ry = A(2,1);
+        inverseMatrix = A;
+        inverseMatrix(1,2) = -rx;
+        inverseMatrix(2,1) = -ry;
+    case 'affine'
+        inverseMatrix = inv(A);
+    case 'homography'
+        inverseMatrix = inv(A);
+    otherwise
+        error('Invalid transformation type specified.');
+end
+
+[H,W] = size(I);   % get our dimensions
+
+% get our original corners
+corners =   [1,1,W,W;
+             1,H,1,H;
+             1,1,1,1];
+
+% use the transformation matrix to get our new corners
+cornersp = A * corners;
+% TODO: divide by w_hat_prime in cornersp to fix the cornersp
+w_hat_primes = cornersp(3,:); % get all w_hat_prime values
+w_hat_primes;
+cornersp = cornersp ./ w_hat_primes; % fix cornersp by dividing by w_hat_prime values
+
+% For assignment two we set the minimum values to 1 and 1 so that images
+% for the panorama start at the same origin.
+maxx = max(cornersp(1,:));
+minx = 1;
+maxy = max(cornersp(2,:));
+miny = 1;
+
+% create our new grid of numbers
+[Xprime,Yprime] = meshgrid( minx:maxx, miny:maxy );
+
+% define our H and W out dimensions based on the dimensions of our new grid
+Hout = size(Xprime,1);
+Wout = size(Xprime,2);
+
+
+% get x/y prime values in single vectors, preparing to create new matrix
+Xprime = Xprime(:);
+Yprime = Yprime(:);
+
+% create new matrix of x/y values (plus thrid row of filler ones).
+pprime = [Xprime';Yprime';ones( 1,numel(Xprime) )];
+
+p = inverseMatrix * pprime;
+
+% TODO: divide by w_hat in p to fix p
+p_w_hats = p(3,:); % get all w_hat_prime values from p
+p = p ./ p_w_hats; % divide by p hats
+
+X = p(1,:);
+Y = p(2,:);
+
+% reshape the X and Y matrices to be of dimensions Hout Wout.
+X = reshape( X', Hout, Wout );
+Y = reshape( Y', Hout, Wout );
+
+Iprime = interp2( I, X, Y );
+
+TransformedImage = Iprime;
+end
