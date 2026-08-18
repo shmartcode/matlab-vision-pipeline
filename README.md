@@ -17,8 +17,7 @@ Within src this list of files/functions are the ones created by me, all others n
     Part 1: Geometric Transformations (transforms_script.m): Custom implementation of affine and projective transformations to warp, scale, and rotate images.               
     Part 2: Panoramic Image Stitching (panorama_script.m): Feature matching, homography estimation via RANSAC, and blending multiple images into a seamless panoramic view.
 
-    Part 3: Camera Calibration & Pose Estimation (camera_calibration.m): Pinhole camera model calibration using chessboard patterns, computing intrinsic and extrinsic parameters. After calibrating the camera the 'dalekosaur' lego mesh is projected onto 2D image planes using estimated camera extrinsics, and also using calibrated extrinsics.
-
+    Part 3: Camera Calibration, Pose Estimation, & 3D Projection: Calibrated a pinhole camera model using chessboard patterns to compute intrinsic and extrinsic parameters, enabling accurate 3D object mesh projection onto 2D input images.
 
 
 💻 How to Run
